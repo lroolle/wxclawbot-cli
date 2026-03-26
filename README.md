@@ -18,15 +18,17 @@
 把下面这段直接发给你的龙虾就行：
 
 ```
-装个技能让你能主动给我发微信，先装 CLI：npm install -g @claw-lab/wxclawbot-cli
+装个技能让你能主动给我发微信。
 
-npm 包：https://www.npmjs.com/package/@claw-lab/wxclawbot-cli
-源码：https://github.com/lroolle/wxclawbot-cli
+技能源码：https://github.com/lroolle/wxclawbot-cli
+SKILL.md 在仓库根目录，把它放到 skills/wxclawbot-send/SKILL.md
+CLI 依赖：npm install -g @claw-lab/wxclawbot-cli
+如果你有 clawhub 可以直接：clawhub install wxclawbot-send
 
 装好了告诉我。
 ```
 
-没了。复制，粘贴，发送。agent 自己搞定安装、配置、定时任务。
+agent 会自己搞定：下载 SKILL.md、装 CLI 依赖、放到正确的 skills 目录、重新加载。
 
 你不需要碰命令行。你不需要写 cron。你不需要看下面的技术文档。
 
