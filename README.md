@@ -17,13 +17,14 @@
 
 把下面这段直接发给你的龙虾就行：
 
-> 装个技能让你能主动给我发微信：clawhub install wxclawbot-send
->
-> npm 包：https://www.npmjs.com/package/@herai/wxclawbot-cli
->
-> 源码：https://github.com/lroolle/wxclawbot-cli
->
-> 装好了告诉我。
+```
+装个技能让你能主动给我发微信：clawhub install wxclawbot-send
+
+npm 包：https://www.npmjs.com/package/@herai/wxclawbot-cli
+源码：https://github.com/lroolle/wxclawbot-cli
+
+装好了告诉我。
+```
 
 没了。复制，粘贴，发送。agent 自己搞定安装、配置、定时任务。
 
