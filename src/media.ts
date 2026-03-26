@@ -12,22 +12,28 @@ import {
 import { VERSION } from "./version.js";
 
 const CDN_BASE_URL = "https://novac2c.cdn.weixin.qq.com/c2c";
+const API_TIMEOUT_MS = 15_000;
 const CDN_UPLOAD_TIMEOUT_MS = 60_000;
 const CDN_MAX_RETRIES = 3;
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 const IMAGE_EXTS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"]);
 const VIDEO_EXTS = new Set([".mp4", ".mov", ".webm", ".mkv", ".avi"]);
 
-function aesEcbPaddedSize(plaintextSize: number): number {
-  return (Math.floor((plaintextSize + 1) / 16) + 1) * 16;
+// PKCS7 padded ciphertext size for AES-128-ECB (16-byte blocks).
+// Matches openclaw-weixin's formula. Note: weclaw Go uses a slightly
+// different formula that over-reports by 16 bytes at block boundaries,
+// but the server accepts both.
+export function aesEcbPaddedSize(plaintextSize: number): number {
+  return Math.ceil((plaintextSize + 1) / 16) * 16;
 }
 
-function encryptAesEcb(plaintext: Buffer, key: Buffer): Buffer {
+export function encryptAesEcb(plaintext: Buffer, key: Buffer): Buffer {
   const cipher = crypto.createCipheriv("aes-128-ecb", key, null);
   return Buffer.concat([cipher.update(plaintext), cipher.final()]);
 }
 
-function classifyMedia(
+export function classifyMedia(
   filePath: string,
 ): { cdnType: number; itemType: number } {
   const ext = path.extname(filePath).toLowerCase();
@@ -41,8 +47,7 @@ function classifyMedia(
 }
 
 function filenameFromPath(filePath: string): string {
-  const name = path.basename(filePath);
-  return name || "file";
+  return path.basename(filePath) || "file";
 }
 
 interface UploadResult {
@@ -107,6 +112,21 @@ export async function uploadFile(opts: {
   return { item };
 }
 
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function uploadToCdn(opts: {
   data: Buffer;
   toUserId: string;
@@ -139,23 +159,37 @@ async function uploadToCdn(opts: {
   const uin = crypto.randomBytes(4).readUInt32BE(0);
   const uinHeader = Buffer.from(String(uin), "utf-8").toString("base64");
 
-  const uploadRes = await fetch(`${baseUrl}/ilink/bot/getuploadurl`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      AuthorizationType: "ilink_bot_token",
-      Authorization: `Bearer ${token}`,
-      "X-WECHAT-UIN": uinHeader,
+  const uploadRes = await fetchWithTimeout(
+    `${baseUrl}/ilink/bot/getuploadurl`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        AuthorizationType: "ilink_bot_token",
+        Authorization: `Bearer ${token}`,
+        "X-WECHAT-UIN": uinHeader,
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    API_TIMEOUT_MS,
+  );
 
   const uploadRespRaw = await uploadRes.text();
   if (!uploadRes.ok) {
-    throw new Error(`getuploadurl HTTP ${uploadRes.status}: ${uploadRespRaw.slice(0, 200)}`);
+    throw new Error(
+      `getuploadurl HTTP ${uploadRes.status}: ${uploadRespRaw.slice(0, 200)}`,
+    );
   }
 
-  const uploadResp: GetUploadUrlResp = JSON.parse(uploadRespRaw);
+  let uploadResp: GetUploadUrlResp;
+  try {
+    uploadResp = JSON.parse(uploadRespRaw);
+  } catch {
+    throw new Error(
+      `getuploadurl invalid JSON: ${uploadRespRaw.slice(0, 200)}`,
+    );
+  }
+
   if ((uploadResp.ret ?? 0) !== 0 || !uploadResp.upload_param) {
     throw new Error(
       `getuploadurl failed: ret=${uploadResp.ret} errmsg=${uploadResp.errmsg ?? "no upload_param"}`,
@@ -172,16 +206,15 @@ async function uploadToCdn(opts: {
 
   for (let attempt = 1; attempt <= CDN_MAX_RETRIES; attempt++) {
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), CDN_UPLOAD_TIMEOUT_MS);
-
-      const cdnRes = await fetch(cdnUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/octet-stream" },
-        body: new Uint8Array(ciphertext),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
+      const cdnRes = await fetchWithTimeout(
+        cdnUrl,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: new Uint8Array(ciphertext),
+        },
+        CDN_UPLOAD_TIMEOUT_MS,
+      );
 
       if (cdnRes.status >= 400 && cdnRes.status < 500) {
         throw new Error(`CDN upload client error ${cdnRes.status}`);
@@ -197,8 +230,10 @@ async function uploadToCdn(opts: {
       break;
     } catch (err) {
       lastError = err;
-      if (err instanceof Error && err.message.includes("client error")) throw err;
+      if (err instanceof Error && err.message.includes("client error"))
+        throw err;
       if (attempt >= CDN_MAX_RETRIES) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
     }
   }
 
@@ -208,12 +243,7 @@ async function uploadToCdn(opts: {
       : new Error(`CDN upload failed after ${CDN_MAX_RETRIES} attempts`);
   }
 
-  return {
-    downloadParam,
-    aesKeyHex: aesKeyHex,
-    fileSize: data.length,
-    cipherSize,
-  };
+  return { downloadParam, aesKeyHex, fileSize: data.length, cipherSize };
 }
 
 export async function readFileOrUrl(filePath: string): Promise<{
@@ -221,19 +251,31 @@ export async function readFileOrUrl(filePath: string): Promise<{
   name: string;
 }> {
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CDN_UPLOAD_TIMEOUT_MS);
-    const res = await fetch(filePath, { signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetchWithTimeout(
+      filePath,
+      {},
+      CDN_UPLOAD_TIMEOUT_MS,
+    );
     if (!res.ok) {
       throw new Error(`download ${filePath}: HTTP ${res.status}`);
     }
     const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_FILE_SIZE) {
+      throw new Error(
+        `file too large: ${buf.length} bytes (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+      );
+    }
     const urlPath = new URL(filePath).pathname;
     const name = path.basename(urlPath) || "file";
     return { data: buf, name };
   }
 
+  const stat = fs.statSync(filePath);
+  if (stat.size > MAX_FILE_SIZE) {
+    throw new Error(
+      `file too large: ${stat.size} bytes (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+    );
+  }
   const data = fs.readFileSync(filePath);
   return { data, name: filePath };
 }
