@@ -1,5 +1,5 @@
 {
-  "name": "wxclaw-cli",
+  "name": "@herai/wxclaw-cli",
   "version": "0.1.0",
   "description": "WeChat ClawBot CLI - proactive messaging for OpenClaw agents",
   "type": "module",

@@ -1,11 +1,11 @@
-# wxclaw-cli
+# @herai/wxclaw-cli
 
 ```
-               _                 _ _
- __      ____| | __ ___      __| (_)
- \ \ /\ / / _` |/ _` \ \ /\ / /| | |
-  \ V  V / (_| | (_| |\ V  V / | | |
-   \_/\_/ \__,_|\__,_| \_/\_/  |_|_|
+                  _
+ __      ___  __ | | __ ___      __
+ \ \ /\ / \ \/ / | |/ _` \ \ /\ / /
+  \ V  V /  >  < | | (_| |\ V  V /
+   \_/\_/  /_/\_\|_|\__,_| \_/\_/
    WeChat ClawBot CLI
 ```
 
@@ -22,7 +22,7 @@ Piggybacks on [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/op
 ### Install
 
 ```bash
-npm install -g wxclaw-cli
+npm install -g @herai/wxclaw-cli
 ```
 
 Requires Node.js >= 20.
@@ -72,8 +72,8 @@ export WXCLAW_BASE_URL="https://ilinkai.weixin.qq.com"  # optional
 ### Programmatic Use
 
 ```typescript
-import { WxClawClient } from "wxclaw-cli";
-import { resolveAccount } from "wxclaw-cli/accounts";
+import { WxClawClient } from "@herai/wxclaw-cli";
+import { resolveAccount } from "@herai/wxclaw-cli/accounts";
 
 const account = resolveAccount();
 const client = new WxClawClient({
@@ -105,7 +105,7 @@ MIT
 ### 安装
 
 ```bash
-npm install -g wxclaw-cli
+npm install -g @herai/wxclaw-cli
 ```
 
 需要 Node.js >= 20。
