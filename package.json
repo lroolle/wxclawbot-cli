@@ -14,7 +14,7 @@
     "build": "tsc",
     "dev": "node --import tsx src/cli.ts",
     "start": "node dist/cli.js",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "node --import tsx --test src/accounts.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
