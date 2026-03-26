@@ -11,7 +11,7 @@ import { VERSION } from "./version.js";
 const SEND_TIMEOUT_MS = 15_000;
 
 const KNOWN_ERRORS: Record<number, string> = {
-  [-2]: "rate limited (~7 msgs per 5 min window)",
+  [-2]: "rate limited, try again later",
   [-14]: "session expired, re-login via openclaw",
 };
 

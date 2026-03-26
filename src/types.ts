@@ -55,4 +55,5 @@ export interface ResolvedAccount {
   token: string;
   baseUrl: string;
   botId: string;
+  defaultTo?: string;
 }

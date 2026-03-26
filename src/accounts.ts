@@ -105,6 +105,7 @@ export function resolveAccount(accountId?: string): ResolvedAccount | null {
     token: data.token,
     baseUrl: data.baseUrl?.trim() || DEFAULT_BASE_URL,
     botId: resolveBotId(data),
+    defaultTo: data.userId?.trim() || undefined,
   };
 }
 
