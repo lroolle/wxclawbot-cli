@@ -17,12 +17,14 @@ export const ItemType = {
   VIDEO: 5,
 } as const;
 
+type ValueOf<T> = T[keyof T];
+
 export interface TextItem {
   text: string;
 }
 
 export interface MessageItem {
-  type: number;
+  type: ValueOf<typeof ItemType>;
   text_item?: TextItem;
 }
 
@@ -30,20 +32,15 @@ export interface SendMsg {
   from_user_id: string;
   to_user_id: string;
   client_id: string;
-  message_type: number;
-  message_state: number;
-  item_list?: MessageItem[];
+  message_type: ValueOf<typeof MessageType>;
+  message_state: ValueOf<typeof MessageState>;
+  item_list: MessageItem[];
   context_token?: string;
 }
 
 export interface SendMessageReq {
   msg: SendMsg;
   base_info?: { channel_version?: string };
-}
-
-export interface SendMessageResp {
-  ret: number;
-  errmsg?: string;
 }
 
 export interface AccountData {

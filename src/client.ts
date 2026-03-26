@@ -6,18 +6,25 @@ import {
   MessageType,
   type SendMessageReq,
 } from "./types.js";
+import { VERSION } from "./version.js";
 
 const SEND_TIMEOUT_MS = 15_000;
-const VERSION = "0.1.0";
 
 const KNOWN_ERRORS: Record<number, string> = {
-  [-2]: "rate limited or frequency control",
+  [-2]: "rate limited (~7 msgs per 5 min window)",
   [-14]: "session expired, re-login via openclaw",
 };
 
 function randomUIN(): string {
   const n = crypto.randomBytes(4).readUInt32BE(0);
   return Buffer.from(String(n), "utf-8").toString("base64");
+}
+
+export interface SendResult {
+  ok: boolean;
+  to: string;
+  clientId: string;
+  error?: string;
 }
 
 export class WxClawClient {
@@ -31,8 +38,17 @@ export class WxClawClient {
     this.botId = opts.botId ?? "";
   }
 
-  async sendText(to: string, text: string): Promise<void> {
+  async sendText(
+    to: string,
+    text: string,
+    opts?: { dryRun?: boolean },
+  ): Promise<SendResult> {
     const clientId = crypto.randomUUID();
+
+    if (opts?.dryRun) {
+      return { ok: true, to, clientId };
+    }
+
     const req: SendMessageReq = {
       msg: {
         from_user_id: this.botId,
@@ -41,7 +57,6 @@ export class WxClawClient {
         message_type: MessageType.BOT,
         message_state: MessageState.FINISH,
         item_list: [{ type: ItemType.TEXT, text_item: { text } }],
-        context_token: "",
       },
       base_info: { channel_version: VERSION },
     };
@@ -55,8 +70,11 @@ export class WxClawClient {
     if (ret !== 0) {
       const hint = KNOWN_ERRORS[ret] ?? "";
       const detail = hint ? ` (${hint})` : "";
-      throw new Error(`ret=${ret}${detail} raw=${JSON.stringify(resp)}`);
+      const error = `ret=${ret}${detail}`;
+      return { ok: false, to, clientId, error };
     }
+
+    return { ok: true, to, clientId };
   }
 
   private async post<T>(endpoint: string, body: unknown): Promise<T> {

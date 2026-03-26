@@ -14,6 +14,7 @@ function extractBotId(token: string): string {
 function stateDir(): string {
   return (
     process.env.OPENCLAW_STATE_DIR?.trim() ||
+    process.env.CLAWDBOT_STATE_DIR?.trim() ||
     path.join(os.homedir(), ".openclaw")
   );
 }
@@ -75,11 +76,15 @@ export function loadAccountData(accountId: string): AccountData | null {
   }
 }
 
+function resolveBotId(data: AccountData): string {
+  return data.userId?.trim() || extractBotId(data.token ?? "");
+}
+
 export function resolveAccount(accountId?: string): ResolvedAccount | null {
   const envToken = process.env.WXCLAW_TOKEN?.trim();
   const envBaseUrl = process.env.WXCLAW_BASE_URL?.trim();
 
-  if (envToken) {
+  if (envToken && !accountId) {
     return {
       id: "env",
       token: envToken,
@@ -99,7 +104,7 @@ export function resolveAccount(accountId?: string): ResolvedAccount | null {
     id: targetId,
     token: data.token,
     baseUrl: data.baseUrl?.trim() || DEFAULT_BASE_URL,
-    botId: extractBotId(data.token),
+    botId: resolveBotId(data),
   };
 }
 
