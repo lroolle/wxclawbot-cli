@@ -24,15 +24,16 @@ function fail(msg: string, json?: boolean): never {
 const program = new Command();
 
 program
-  .name("wxclaw")
-  .description("WeChat ClawBot CLI - proactive messaging")
+  .name("wxclawbot")
+  .description("WeixinClawBot CLI - proactive messaging")
   .version(VERSION);
 
 program
   .command("send")
-  .description("Send a text message to a WeChat user")
+  .description("Send a message to a WeChat user")
   .option("--to <userId>", "target user ID (default: bound user from account)")
   .option("--text <message>", 'message text (use "-" to read from stdin)')
+  .option("--file <path>", "file or URL to send (image/video/file)")
   .option("--account <id>", "account ID (default: first available)")
   .option("--json", "output result as JSON")
   .option("--dry-run", "preview without sending")
@@ -43,6 +44,7 @@ program
       opts: {
         to?: string;
         text?: string;
+        file?: string;
         account?: string;
         json?: boolean;
         dryRun?: boolean;
@@ -51,17 +53,17 @@ program
       let text = opts.text;
       if (text === "-") {
         text = readStdin();
-      } else if (!text && args.length > 0) {
+      } else if (!text && !opts.file && args.length > 0) {
         text = args.join(" ");
-      } else if (!text) {
+      } else if (!text && !opts.file) {
         if (!process.stdin.isTTY) {
           text = readStdin();
         }
       }
 
-      if (!text) {
+      if (!text && !opts.file) {
         fail(
-          "no message text. use --text, positional args, or pipe via stdin.",
+          "no message. use --text, --file, positional args, or pipe via stdin.",
           opts.json,
         );
       }
@@ -89,15 +91,25 @@ program
       });
 
       try {
-        const result = await client.sendText(to, text, {
-          dryRun: opts.dryRun,
-        });
+        let result;
+
+        if (opts.file) {
+          result = await client.sendFile(to, opts.file, {
+            text,
+            dryRun: opts.dryRun,
+          });
+        } else {
+          result = await client.sendText(to, text!, {
+            dryRun: opts.dryRun,
+          });
+        }
 
         if (opts.json) {
           console.log(JSON.stringify(result));
         } else if (result.ok) {
           const prefix = opts.dryRun ? "[dry-run] would send" : "sent";
-          console.log(`${prefix} to ${to}`);
+          const what = opts.file ? `file ${opts.file}` : "text";
+          console.log(`${prefix} ${what} to ${to}`);
         } else {
           console.error(`send failed: ${result.error}`);
           process.exit(1);

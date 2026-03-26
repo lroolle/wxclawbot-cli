@@ -1,9 +1,11 @@
 import crypto from "node:crypto";
 
+import { readFileOrUrl, uploadFile } from "./media.js";
 import {
   ItemType,
   MessageState,
   MessageType,
+  type MessageItem,
   type SendMessageReq,
 } from "./types.js";
 import { VERSION } from "./version.js";
@@ -49,6 +51,48 @@ export class WxClawClient {
       return { ok: true, to, clientId };
     }
 
+    const items: MessageItem[] = [
+      { type: ItemType.TEXT, text_item: { text } },
+    ];
+
+    return this.sendItems(to, items, clientId);
+  }
+
+  async sendFile(
+    to: string,
+    filePath: string,
+    opts?: { text?: string; dryRun?: boolean },
+  ): Promise<SendResult> {
+    const clientId = crypto.randomUUID();
+
+    if (opts?.dryRun) {
+      return { ok: true, to, clientId };
+    }
+
+    const { data, name } = await readFileOrUrl(filePath);
+
+    const { item } = await uploadFile({
+      data,
+      filePath: name,
+      toUserId: to,
+      baseUrl: this.baseUrl,
+      token: this.token,
+    });
+
+    const items: MessageItem[] = [];
+    if (opts?.text) {
+      items.push({ type: ItemType.TEXT, text_item: { text: opts.text } });
+    }
+    items.push(item);
+
+    return this.sendItems(to, items, clientId);
+  }
+
+  private async sendItems(
+    to: string,
+    items: MessageItem[],
+    clientId: string,
+  ): Promise<SendResult> {
     const req: SendMessageReq = {
       msg: {
         from_user_id: this.botId,
@@ -56,7 +100,7 @@ export class WxClawClient {
         client_id: clientId,
         message_type: MessageType.BOT,
         message_state: MessageState.FINISH,
-        item_list: [{ type: ItemType.TEXT, text_item: { text } }],
+        item_list: items,
       },
       base_info: { channel_version: VERSION },
     };
@@ -70,8 +114,7 @@ export class WxClawClient {
     if (ret !== 0) {
       const hint = KNOWN_ERRORS[ret] ?? "";
       const detail = hint ? ` (${hint})` : "";
-      const error = `ret=${ret}${detail}`;
-      return { ok: false, to, clientId, error };
+      return { ok: false, to, clientId, error: `ret=${ret}${detail}` };
     }
 
     return { ok: true, to, clientId };

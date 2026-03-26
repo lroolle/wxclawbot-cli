@@ -1,14 +1,15 @@
 {
-  "name": "@herai/wxclaw-cli",
-  "version": "0.1.0",
-  "description": "WeChat ClawBot CLI - proactive messaging for OpenClaw agents",
+  "name": "@herai/wxclawbot-cli",
+  "version": "0.2.0",
+  "description": "WeixinClawBot CLI - send text, images, video, and files to WeChat users",
   "type": "module",
   "bin": {
-    "wxclaw": "dist/cli.js"
+    "wxclawbot": "dist/cli.js"
   },
   "exports": {
     ".": "./dist/client.js",
-    "./accounts": "./dist/accounts.js"
+    "./accounts": "./dist/accounts.js",
+    "./media": "./dist/media.js"
   },
   "scripts": {
     "build": "tsc",
@@ -27,13 +28,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lroolle/wxclaw-cli.git"
+    "url": "git+https://github.com/lroolle/wxclawbot-cli.git"
   },
   "keywords": [
     "wechat",
     "weixin",
     "openclaw",
     "clawbot",
+    "weixinclawbot",
     "cli",
     "proactive-messaging"
   ],
