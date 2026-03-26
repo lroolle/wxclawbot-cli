@@ -1,0 +1,9 @@
+dist/
+node_modules/
+.env
+.git/
+.github/
+*.test.ts
+tsconfig.json
+package-lock.json
+devlog/

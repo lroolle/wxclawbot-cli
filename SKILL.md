@@ -1,5 +1,6 @@
 ---
 name: wxclawbot-send
+version: 0.3.0
 description: >
   Send messages to WeChat users via wxclawbot CLI. Supports text, images,
   video, and file attachments. Use when: sending messages to WeChat users,
@@ -8,7 +9,28 @@ description: >
   notify wechat, weixin message, wx message, wxclawbot send, push wechat,
   send image wechat, send file wechat. DO NOT TRIGGER when: sending email,
   SMS, Slack, Teams, Telegram, or other non-WeChat messages.
-license: MIT
+metadata:
+  openclaw:
+    requires:
+      bins: [wxclawbot]
+      config: [~/.openclaw/openclaw-weixin/accounts/]
+    primaryEnv: WXCLAW_TOKEN
+    install:
+      - kind: node
+        package: "@herai/wxclawbot-cli"
+        bins: [wxclawbot]
+    os: [macos, linux]
+    envVars:
+      - name: WXCLAW_TOKEN
+        required: false
+        description: "Override bot token (bot@im.bot:your-token)"
+      - name: WXCLAW_BASE_URL
+        required: false
+        description: "Override API endpoint (default: https://ilinkai.weixin.qq.com)"
+    author: lroolle
+    links:
+      homepage: https://github.com/lroolle/wxclawbot-cli
+      repository: https://github.com/lroolle/wxclawbot-cli
 ---
 
 # wxclawbot-send

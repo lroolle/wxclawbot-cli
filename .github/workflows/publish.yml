@@ -1,11 +1,12 @@
-name: Publish to npm
+name: Publish
 
 on:
   release:
     types: [published]
 
 jobs:
-  publish:
+  npm:
+    name: Publish to npm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,3 +24,25 @@ jobs:
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  clawhub:
+    name: Publish skill to ClawHub
+    runs-on: ubuntu-latest
+    needs: npm
+    if: ${{ vars.CLAWHUB_PUBLISH_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g clawhub
+      - name: Publish skill
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          clawhub publish . \
+            --slug wxclawbot-send \
+            --name "WeixinClawBot Send" \
+            --version "$VERSION" \
+            --tags latest
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}

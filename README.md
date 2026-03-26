@@ -9,83 +9,89 @@
    WeixinClawBot CLI
 ```
 
-[English](#english) | [简体中文](#简体中文)
+## For AI Agents
 
----
+You are an AI agent that needs to send messages to WeChat users.
+Use `wxclawbot` — a CLI that sends text, images, video, and files via the WeixinClawBot API.
 
-## English
-
-Send text, images, video, and files to WeChat users from scripts, cron jobs, or AI agents.
-
-Piggybacks on [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) credentials -- no separate login needed. Inspired by [weclaw](https://github.com/fastclaw-ai/weclaw) (Go).
-
-### Install
+### Setup Check
 
 ```bash
-npm install -g @herai/wxclawbot-cli
+wxclawbot accounts --json
 ```
 
-Requires Node.js >= 20.
+If empty: credentials missing. The human must login via openclaw-weixin first.
+Credentials live at `~/.openclaw/openclaw-weixin/accounts/`.
 
-### Quick Start
+### Send Text
 
 ```bash
-# Send text (default: to the bound user)
-wxclawbot send --text "Hello from wxclawbot"
+wxclawbot send --text "Your task is complete" --json
+```
 
-# Send to a specific user
-wxclawbot send --to "user@im.wechat" --text "Hello"
+### Send File (image, video, or attachment)
 
-# Send an image
-wxclawbot send --file ./photo.jpg
+```bash
+wxclawbot send --file ./chart.png --json
+wxclawbot send --file ./report.pdf --text "See attached" --json
+wxclawbot send --file "https://example.com/image.png" --json
+```
 
-# Send a file with caption
-wxclawbot send --file ./report.pdf --text "Here's the report"
+Media type is auto-detected by extension:
+- Image: `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp`
+- Video: `.mp4` `.mov` `.webm` `.mkv` `.avi`
+- File: everything else
 
-# Send from URL
-wxclawbot send --file "https://example.com/image.png"
+### Send to a Specific User
 
-# Pipe from stdin
-echo "Daily report ready" | wxclawbot send
+```bash
+wxclawbot send --to "user@im.wechat" --text "Hello" --json
+```
 
-# Dry run
+Default `--to` is the bound user from the openclaw account.
+
+### Pipe from stdin
+
+```bash
+echo "Daily report ready" | wxclawbot send --json
+```
+
+### Dry Run
+
+```bash
 wxclawbot send --text "test" --dry-run
-
-# JSON output (for agents and pipelines)
-wxclawbot send --text "test" --json
-
-# List accounts
-wxclawbot accounts
 ```
 
-### Supported Media Types
+### Parse the Output
 
-| Type | Extensions | How it appears in WeChat |
-|------|-----------|------------------------|
-| Image | .png .jpg .jpeg .gif .webp .bmp | Inline image |
-| Video | .mp4 .mov .webm .mkv .avi | Video player |
-| File | everything else | File attachment |
-
-Media is auto-classified by file extension. Files are encrypted (AES-128-ECB) and uploaded to the WeChat CDN.
-
-### Account Discovery
-
-wxclawbot auto-discovers accounts from the openclaw-weixin state directory:
+ALWAYS use `--json`. Parse the JSON to determine success.
 
 ```
-~/.openclaw/openclaw-weixin/accounts/{accountId}.json
+Success: {"ok":true,"to":"user@im.wechat","clientId":"..."}
+Failure: {"ok":false,"error":"..."}
 ```
 
-In a typical setup, one openclaw instance binds to one WeixinClawBot. The bound user is used as the default `--to` target.
+Exit code 0 means the CLI ran, NOT that the message was delivered. Check the `ok` field.
 
-Override with environment variables:
+### Error Handling
 
-```bash
-export WXCLAW_TOKEN="bot@im.bot:your-token"
-export WXCLAW_BASE_URL="https://ilinkai.weixin.qq.com"  # optional
-```
+| `ret` | Meaning | Action |
+|-------|---------|--------|
+| `-2` | Rate limited | Wait 5-10s, retry. Do NOT tight-loop. |
+| `-14` | Session expired | Tell the human to re-login via openclaw. |
+| CDN error | File upload failed | Check file size (<100MB), retry. |
+| Timeout | Network (15s limit) | Retry. |
 
-### Programmatic Use
+Rate limits are ~7 msgs per 5 min per bot account. Server-side, shared across all clients.
+
+### Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `WXCLAW_TOKEN` | Override bot token (`bot@im.bot:your-token`) |
+| `WXCLAW_BASE_URL` | Override API endpoint (default: `https://ilinkai.weixin.qq.com`) |
+
+### Programmatic TypeScript API
 
 ```typescript
 import { WxClawClient } from "@herai/wxclawbot-cli";
@@ -99,12 +105,59 @@ const client = new WxClawClient({
 });
 
 await client.sendText("user@im.wechat", "Hello");
-await client.sendFile("user@im.wechat", "./photo.jpg", { text: "Check this out" });
+await client.sendFile("user@im.wechat", "./photo.jpg", { text: "Check this" });
+```
+
+---
+
+## For Humans
+
+Send text, images, video, and files to WeChat users from scripts, cron jobs, or AI agents.
+
+Piggybacks on [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) credentials — no separate login needed. Inspired by [weclaw](https://github.com/fastclaw-ai/weclaw) (Go).
+
+### Install
+
+```bash
+npm install -g @herai/wxclawbot-cli
+```
+
+Requires Node.js >= 20.
+
+### Quick Start
+
+```bash
+wxclawbot send --text "Hello from wxclawbot"
+wxclawbot send --to "user@im.wechat" --text "Hello"
+wxclawbot send --file ./photo.jpg
+wxclawbot send --file ./report.pdf --text "Here's the report"
+wxclawbot send --file "https://example.com/image.png"
+echo "Daily report ready" | wxclawbot send
+wxclawbot send --text "test" --dry-run
+wxclawbot send --text "test" --json
+wxclawbot accounts
+```
+
+### Account Discovery
+
+wxclawbot auto-discovers accounts from the openclaw-weixin state directory:
+
+```
+~/.openclaw/openclaw-weixin/accounts/{accountId}.json
+```
+
+One openclaw instance binds to one WeixinClawBot. The bound user is the default `--to` target.
+
+Override with environment variables:
+
+```bash
+export WXCLAW_TOKEN="bot@im.bot:your-token"
+export WXCLAW_BASE_URL="https://ilinkai.weixin.qq.com"  # optional
 ```
 
 ### Rate Limits
 
-The WeChat bot API has rate limiting. If you hit it (`ret=-2`), wait and retry. This is server-side and shared across all clients using the same bot token.
+The WeChat bot API has rate limiting (~7 msgs per 5 min per bot account). If you hit `ret=-2`, wait 5-10s and retry. This is server-side and shared across all clients using the same bot token.
 
 ### License
 
@@ -129,51 +182,17 @@ npm install -g @herai/wxclawbot-cli
 ### 快速开始
 
 ```bash
-# 发送文本（默认发给绑定用户）
 wxclawbot send --text "你好，来自 wxclawbot"
-
-# 发送图片
 wxclawbot send --file ./photo.jpg
-
-# 发送文件 + 文字说明
 wxclawbot send --file ./report.pdf --text "请查收报告"
-
-# 从 URL 发送
-wxclawbot send --file "https://example.com/image.png"
-
-# 通过管道输入
 echo "日报已生成" | wxclawbot send
-
-# JSON 输出（适合脚本和 Agent 调用）
 wxclawbot send --text "测试" --json
-
-# 查看账号列表
 wxclawbot accounts
 ```
 
-### 支持的媒体类型
-
-| 类型 | 扩展名 | 微信中的显示 |
-|------|--------|------------|
-| 图片 | .png .jpg .jpeg .gif .webp .bmp | 内联图片 |
-| 视频 | .mp4 .mov .webm .mkv .avi | 视频播放器 |
-| 文件 | 其他所有类型 | 文件附件 |
-
-媒体文件按扩展名自动分类。文件经 AES-128-ECB 加密后上传至微信 CDN。
-
-### 账号发现
-
-wxclawbot 自动从 openclaw-weixin 状态目录读取账号：
-
-```
-~/.openclaw/openclaw-weixin/accounts/{accountId}.json
-```
-
-通常一个 openclaw 实例绑定一个 WeixinClawBot，绑定用户自动作为默认发送目标。
-
 ### 频率限制
 
-微信机器人 API 有频率限制。遇到 `ret=-2` 时，稍等后重试即可。
+微信机器人 API 有频率限制（每个机器人账号约 7 条/5 分钟）。遇到 `ret=-2` 时，等待 5-10 秒后重试。
 
 ### 开源许可
 
