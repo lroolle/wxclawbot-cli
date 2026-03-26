@@ -96,6 +96,20 @@ Media type is auto-detected by file extension:
 wxclawbot accounts --json
 ```
 
+Returns: `[{"id":"<botId>-im-bot","configured":true,"baseUrl":"..."}]`
+
+## Account Discovery
+
+The CLI auto-discovers accounts from `~/.openclaw/openclaw-weixin/accounts/*.json`.
+Each file contains `token`, `baseUrl`, `userId` (default `--to` target).
+
+- Bot ID is extracted from the token at runtime (not hardcoded)
+- Account ID changes when openclaw-weixin is upgraded or re-registers
+- `--to` defaults to the `userId` in the account file (the bound user)
+- If `WXCLAW_TOKEN` env var is set, it overrides file-based discovery
+
+After upgrading openclaw-weixin, always verify with `wxclawbot accounts --json`.
+
 ## Agent Integration
 
 ALWAYS use `--json` when calling programmatically. Parse JSON to determine success.
@@ -113,7 +127,7 @@ result=$(wxclawbot send --file ./chart.png --text "Daily metrics" --json)
 
 | Error | Meaning | Action |
 |-------|---------|--------|
-| `ret=-2` | Rate limited (WeChat API) | Wait 5-10s, retry |
+| `ret=-2` | Rate limited (~7 msgs/5min per bot, shared across ALL clients) | Wait 60-120s, retry. Do NOT tight-loop. |
 | `ret=-14` | Session expired | Re-login via openclaw |
 | No account found | Missing credentials | Run `wxclawbot accounts` to diagnose |
 | CDN upload error | File upload failed | Check file size/format, retry |

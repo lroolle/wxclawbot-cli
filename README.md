@@ -13,19 +13,19 @@
 
 **现在可以了。**
 
-## 安装
+## 安装 / 更新
 
 把下面这段直接发给你的龙虾就行：
 
 ```
-装个技能让你能主动给我发微信。
+安装/更新一个技能让你能主动给我发微信。
 
 技能源码：https://github.com/lroolle/wxclawbot-cli
 SKILL.md 在仓库根目录，把它放到 skills/wxclawbot-send/SKILL.md
 CLI 依赖：npm install -g @claw-lab/wxclawbot-cli
 如果你有 clawhub 可以直接：clawhub install wxclawbot-send
 
-装好了告诉我。
+装好后用 wxclawbot accounts --json 验证账号是否正常。
 ```
 
 agent 会自己搞定：下载 SKILL.md、装 CLI 依赖、放到正确的 skills 目录、重新加载。

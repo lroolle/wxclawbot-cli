@@ -14,19 +14,19 @@ WeChat bots can only reply. They can't initiate. That's like having a secretary 
 
 **Now it does.**
 
-## Install
+## Install / Update
 
-Send this to your OpenClaw agent (Lobster). That's the whole install process:
+Send this to your OpenClaw agent (Lobster):
 
 ```
-Install a skill so you can proactively WeChat me.
+Install/update a skill so you can proactively WeChat me.
 
 Skill source: https://github.com/lroolle/wxclawbot-cli
 SKILL.md is at repo root, put it in skills/wxclawbot-send/SKILL.md
 CLI dependency: npm install -g @claw-lab/wxclawbot-cli
 If you have clawhub: clawhub install wxclawbot-send
 
-Let me know when it's done.
+Verify with: wxclawbot accounts --json
 ```
 
 The agent handles the rest: download SKILL.md, install CLI dependency, place it in the right skills directory, reload.
