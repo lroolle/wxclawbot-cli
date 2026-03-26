@@ -11,73 +11,53 @@
 >
 > -- [龙虾 接入微信教程](https://mp.weixin.qq.com/s/nYDQ1obQEHe1WavGpNzasQ)
 
-翻译一下：你的 AI agent 只能被动回复，不能主动说话。就像雇了个秘书，但这个秘书只有你先开口他才会理你。
+**现在可以了。** 装上这个技能，你的 agent 就能主动给你发微信了。定时提醒、监控告警、自动汇报 -- 你只需要用自然语言告诉它该干嘛，剩下的它自己搞定。
 
-**现在可以了。** 这个 CLI 让你的 agent 拥有主动推送能力 -- 定时提醒、监控告警、自动汇报，你说了算。复用 [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) 登录凭证，不用额外折腾。
+## 怎么用
 
-## 能干嘛？来点实际的
-
-### 生活提醒（别等身体提醒你）
+### 1. 给你的 agent 装上技能
 
 ```bash
-# 每 45 分钟提醒喝水
-wxclawbot send --text "喝水，别等肾结石来提醒你" --json
-
-# 每坐满 1 小时
-wxclawbot send --text "你屁股已经焊在椅子上 60 分钟了，站起来" --json
-
-# 凌晨 1 点还在写代码
-wxclawbot send --text "你的代码质量已经和你的发际线一样在后退了，睡觉" --json
-
-# 周五 5:55
-wxclawbot send --text "距离下班还有 5 分钟，别接新需求，别回消息，准备跑" --json
-
-# 工作日 11:15
-wxclawbot send --text "再不点外卖，配送排到下午两点，届时你将体验饥饿驱动开发" --json
+clawhub install wxclawbot-send
 ```
 
-### DevOps（线上炸了你得知道）
+### 2. 直接跟 agent 说话就行
 
-```bash
-# CI/CD 挂了
-wxclawbot send --text "CI 挂了，是 @张三 的 commit abc1234 炸的，麻烦擦屁股" --json
+不用写代码，不用配 cron，不用碰命令行。agent 自己会调用技能、管理定时任务。
 
-# PR 超过 24 小时没人 review
-wxclawbot send --text "PR #42 已经晾了 24 小时，review 一下，代码不会自己合并" --json
+**生活提醒：**
 
-# 部署成功
-wxclawbot send --text "v2.3.1 上线了，暂时没炸" --json
+> 每 45 分钟微信提醒我喝水，别客气直接骂
+>
+> 每坐满 1 小时提醒我站起来活动，语气凶一点
+>
+> 凌晨 1 点以后如果我还在跟你聊天，直接微信骂我去睡觉
+>
+> 周五下午 5:55 提醒我准备下班，不要接新需求
+>
+> 工作日 11:15 提醒我点外卖，不然配送排到下午两点
 
-# 部署失败
-wxclawbot send --text "v2.3.1 炸了，别慌，慌也没用" --json
+**DevOps 告警：**
 
-# 生产环境错误率飙升
-wxclawbot send --text "生产环境错误率 15%，正常是 0.1%，建议立刻看看" --json
+> CI 挂了第一时间微信通知我，告诉我是谁的 commit 炸的
+>
+> 有 PR 超过 24 小时没人 review 就催我
+>
+> 每次部署完成通知我，成功失败都要说
+>
+> 生产环境错误率超过 1% 立刻微信告警
 
-# GitHub contributions 连续 3 天空白
-wxclawbot send --text "你的 GitHub 绿点正在荒漠化，连续 3 天没提交了" --json
-```
+**业务运营：**
 
-### 业务运营（让机器人替你干活）
+> 每天早上 9 点把昨天的核心指标汇总发给我
+>
+> 工单超 SLA 4 小时自动升级通知我
+>
+> 检测到异常登录立刻微信告警
+>
+> 服务器磁盘超 90% 通知我
 
-```bash
-# 定时日报
-wxclawbot send --file ./daily-report.pdf --text "今日数据，请查收" --json
-
-# 工单超 SLA
-wxclawbot send --text "工单 #1024 已超 SLA 4 小时，升级处理" --json
-
-# 安全告警
-wxclawbot send --text "检测到异常登录：来自 越南胡志明市，不是你的话赶紧改密码" --json
-
-# 服务器告警
-wxclawbot send --text "prod-03 磁盘使用率 95%，再不清就要现场表演磁盘已满" --json
-
-# 发图片/截图
-wxclawbot send --file ./monitoring-screenshot.png --text "仪表盘截图" --json
-```
-
-配合 cron、GitHub Actions、你自己的监控脚本，排列组合随你玩。
+就这样。你说人话，agent 干活。
 
 ## 安装
 
@@ -91,9 +71,9 @@ clawhub install wxclawbot-send
 npm install -g @herai/wxclawbot-cli
 ```
 
-需要 Node.js >= 20。没有就去装，这不是一个可以商量的事情。
+需要 Node.js >= 20，openclaw-weixin 已登录。
 
-## 用法
+## CLI 参考（给 agent 和脚本用的）
 
 ```bash
 wxclawbot send --text "消息内容" --json
@@ -103,45 +83,31 @@ wxclawbot send --to "user@im.wechat" --text "你好" --json
 echo "日报已生成" | wxclawbot send --json
 ```
 
-- `--to` 默认是 openclaw 账号绑定的用户，用 `--to` 可以指定其他人
-- `--json` **始终带上**，不带的输出格式不保证稳定，别怪我没说
-- 支持 stdin 管道输入，适合脚本串联
+- `--to` 默认是 openclaw 账号绑定的用户
+- `--json` 始终带上
+- 媒体类型按扩展名自动识别：图片 (.png .jpg .jpeg .gif .webp .bmp)，视频 (.mp4 .mov .webm .mkv .avi)，文件（其他）
 
-媒体类型按扩展名自动识别：
-- 图片: `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp`
-- 视频: `.mp4` `.mov` `.webm` `.mkv` `.avi`
-- 文件: 其他所有扩展名
-
-## 输出
+输出：
 
 ```json
 {"ok":true,"to":"user@im.wechat","clientId":"..."}
-```
-
-```json
 {"ok":false,"error":"ret=-2 (rate limited, try again later)"}
 ```
 
-**重要：退出码 0 只表示 CLI 正常运行，不代表消息送达。** 务必检查 `ok` 字段。是的，这不符合 Unix 哲学，但这是现实 -- 网络请求和本地执行是两码事。
+| ret | 含义 | 处理 |
+|-----|------|------|
+| -2 | 频率限制 | 等 5-10 秒重试 |
+| -14 | 会话过期 | 通过 openclaw 重新登录 |
 
-## 错误处理
+频率限制：每个机器人账号约 **7 条 / 5 分钟**，服务端限制。
 
-| ret | 含义 | 怎么办 |
-|-----|------|--------|
-| -2 | 频率限制 | 等 5-10 秒重试。不要写 `while true` 紧循环，那只会让你被限得更久 |
-| -14 | 会话过期 | 通过 openclaw 重新登录，token 不是永久的 |
-
-频率限制：每个机器人账号约 **7 条 / 5 分钟**，服务端限制，所有客户端共享。别想着开多个进程绕过去，没用的。
-
-## 账号管理
+## 账号
 
 ```bash
 wxclawbot accounts --json
 ```
 
-自动从 `~/.openclaw/openclaw-weixin/accounts/` 发现账号。
-
-环境变量覆盖（CI/CD 或容器环境用这个）：
+自动从 `~/.openclaw/openclaw-weixin/accounts/` 发现。环境变量覆盖：
 
 ```bash
 export WXCLAW_TOKEN="bot@im.bot:your-token"
@@ -149,8 +115,6 @@ export WXCLAW_BASE_URL="https://ilinkai.weixin.qq.com"
 ```
 
 ## 编程接口
-
-不想用 CLI？直接在代码里调：
 
 ```typescript
 import { WxClawClient } from "@herai/wxclawbot-cli";
@@ -167,8 +131,6 @@ await client.sendText("user@im.wechat", "你好");
 await client.sendFile("user@im.wechat", "./photo.jpg", { text: "请查收" });
 ```
 
-`resolveAccount()` 的发现逻辑跟 CLI 一样：环境变量 > 本地账号文件。
-
 ## 相关链接
 
 - [npm](https://www.npmjs.com/package/@herai/wxclawbot-cli)
@@ -178,4 +140,4 @@ await client.sendFile("user@im.wechat", "./photo.jpg", { text: "请查收" });
 
 ## 开源许可
 
-MIT -- 拿去用，别客气。
+MIT

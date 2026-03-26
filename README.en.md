@@ -2,81 +2,61 @@
 
 [简体中文](./README.md) | [npm](https://www.npmjs.com/package/@herai/wxclawbot-cli) | [GitHub](https://github.com/lroolle/wxclawbot-cli) | [ClawHub](https://clawhub.ai/lroolle/wxclawbot-send)
 
-Let your OpenClaw AI agent proactively send WeChat messages. Text, images, video, files -- whatever you need.
+Let your OpenClaw AI agent proactively send WeChat messages. Text, images, video, files.
 
 ## Why This Exists
 
-WeChat's official bot API has one glaring limitation: bots can only *reply*. They can't initiate conversations. It's like hiring an assistant who only speaks when spoken to. Completely useless for reminders, alerts, or anything proactive.
+WeChat's bot API only supports replies -- bots can't initiate. This skill fixes that. Your agent can now send messages on its own schedule.
 
 > "Currently doesn't support proactively sending you messages on a schedule"
 >
 > -- [Lobster's WeChat Integration Tutorial](https://mp.weixin.qq.com/s/nYDQ1obQEHe1WavGpNzasQ)
 
-**This CLI fixes that.** Your OpenClaw agent can now send messages on its own schedule -- timed reminders, monitoring alerts, automated reports. Reuses [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) credentials, no extra auth dance.
+## How It Works
 
-## What Can It Actually Do?
-
-### Life Reminders (Before Your Body Reminds You the Hard Way)
+### 1. Install the skill
 
 ```bash
-# Every 45 minutes
-wxclawbot send --text "Drink water. Don't wait for kidney stones to remind you." --json
-
-# Every hour of sitting
-wxclawbot send --text "Your ass has been welded to that chair for 60 minutes. Stand up." --json
-
-# 1 AM and still coding
-wxclawbot send --text "Your code quality is receding faster than your hairline. Go to sleep." --json
-
-# Friday 5:55 PM
-wxclawbot send --text "5 minutes to freedom. Don't accept new tasks. Don't reply to messages. Prepare to run." --json
-
-# Weekdays 11:15 AM
-wxclawbot send --text "Order lunch now or delivery gets backed up until 2 PM. Enjoy hunger-driven development." --json
+clawhub install wxclawbot-send
 ```
 
-### DevOps (Know When Production Is on Fire)
+### 2. Just talk to your agent
 
-```bash
-# CI/CD broke
-wxclawbot send --text "CI is down. It was @zhangsan's commit abc1234. Please clean up your mess." --json
+No code, no cron config, no CLI. The agent handles scheduling and invocation internally.
 
-# PR sitting unreviewed for 24h
-wxclawbot send --text "PR #42 has been sitting there for 24 hours. Review it. Code doesn't merge itself." --json
+**Life reminders:**
 
-# Deploy succeeded
-wxclawbot send --text "v2.3.1 is live. Nothing has exploded yet." --json
+> Remind me to drink water every 45 minutes, be blunt about it
+>
+> Every hour of sitting, tell me to stand up
+>
+> If I'm still chatting with you after 1 AM, tell me to go to sleep
+>
+> Friday 5:55 PM, remind me to stop working and leave
+>
+> Weekdays 11:15, remind me to order lunch before delivery backs up
 
-# Deploy failed
-wxclawbot send --text "v2.3.1 blew up. Don't panic. Well, panicking won't help anyway." --json
+**DevOps alerts:**
 
-# Error rate spike
-wxclawbot send --text "Production error rate at 15%. Normal is 0.1%. Might want to look at that." --json
+> When CI breaks, WeChat me immediately with whose commit caused it
+>
+> If a PR sits unreviewed for 24 hours, ping me
+>
+> Notify me on every deploy, success or failure
+>
+> If production error rate exceeds 1%, alert me via WeChat immediately
 
-# GitHub contributions gap
-wxclawbot send --text "Your GitHub contribution graph is turning into a desert. 3 days without commits." --json
-```
+**Business ops:**
 
-### Business Operations (Let Robots Do the Boring Stuff)
+> Send me yesterday's key metrics summary every morning at 9
+>
+> Auto-escalate tickets that exceed SLA by 4 hours
+>
+> Alert me on suspicious logins immediately
+>
+> Notify me when any server disk exceeds 90%
 
-```bash
-# Daily report
-wxclawbot send --file ./daily-report.pdf --text "Today's numbers. Attached." --json
-
-# SLA breach
-wxclawbot send --text "Ticket #1024 has exceeded SLA by 4 hours. Escalating." --json
-
-# Security alert
-wxclawbot send --text "Suspicious login detected from Ho Chi Minh City. If that's not you, change your password now." --json
-
-# Server alert
-wxclawbot send --text "prod-03 disk usage at 95%. Clean it up or enjoy the disk-full show." --json
-
-# Screenshots / images
-wxclawbot send --file ./monitoring-screenshot.png --text "Dashboard snapshot" --json
-```
-
-Combine with cron, GitHub Actions, or your own monitoring scripts. Go wild.
+That's it. You talk, the agent works.
 
 ## Install
 
@@ -90,9 +70,9 @@ Or via npm:
 npm install -g @herai/wxclawbot-cli
 ```
 
-Requires Node.js >= 20. This is not negotiable.
+Requires Node.js >= 20, openclaw-weixin logged in.
 
-## Usage
+## CLI Reference (for agents and scripts)
 
 ```bash
 wxclawbot send --text "message" --json
@@ -102,35 +82,23 @@ wxclawbot send --to "user@im.wechat" --text "Hello" --json
 echo "report ready" | wxclawbot send --json
 ```
 
-- `--to` defaults to the bound user from your openclaw account. Use `--to` for someone else.
-- `--json` -- **always use this**. The non-JSON output format is not stable and you will regret relying on it.
-- Supports stdin pipe input for scripting.
+- `--to` defaults to the bound user from the openclaw account
+- `--json` always use this
+- Media type auto-detected: image (.png .jpg .jpeg .gif .webp .bmp), video (.mp4 .mov .webm .mkv .avi), file (everything else)
 
-Media type auto-detected by extension:
-- Image: `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp`
-- Video: `.mp4` `.mov` `.webm` `.mkv` `.avi`
-- File: everything else
-
-## Output
+Output:
 
 ```json
 {"ok":true,"to":"user@im.wechat","clientId":"..."}
-```
-
-```json
 {"ok":false,"error":"ret=-2 (rate limited, try again later)"}
 ```
 
-**Exit code 0 means the CLI ran successfully. It does NOT mean the message was delivered.** Always check the `ok` field. Yes, this violates the spirit of Unix exit codes. Reality doesn't care about your principles -- network calls and local execution are different things.
+| ret | meaning | action |
+|-----|---------|--------|
+| -2 | rate limited | wait 5-10s, retry |
+| -14 | session expired | re-login via openclaw |
 
-## Errors
-
-| ret | meaning | what to do |
-|-----|---------|------------|
-| -2 | rate limited | Wait 5-10 seconds and retry. Do not `while true` loop this. That makes it worse. |
-| -14 | session expired | Re-login via openclaw. Tokens don't last forever. |
-
-Rate limit: **~7 messages / 5 minutes** per bot account, enforced server-side, shared across all clients. No, you can't bypass it with multiple processes. Don't try.
+Rate limit: **~7 msgs / 5 min** per bot account, server-side.
 
 ## Accounts
 
@@ -138,9 +106,7 @@ Rate limit: **~7 messages / 5 minutes** per bot account, enforced server-side, s
 wxclawbot accounts --json
 ```
 
-Auto-discovers from `~/.openclaw/openclaw-weixin/accounts/`.
-
-Env var override (for CI/CD or containers):
+Auto-discovers from `~/.openclaw/openclaw-weixin/accounts/`. Env override:
 
 ```bash
 export WXCLAW_TOKEN="bot@im.bot:your-token"
@@ -148,8 +114,6 @@ export WXCLAW_BASE_URL="https://ilinkai.weixin.qq.com"
 ```
 
 ## Programmatic API
-
-Don't want the CLI? Use it as a library:
 
 ```typescript
 import { WxClawClient } from "@herai/wxclawbot-cli";
@@ -166,15 +130,13 @@ await client.sendText("user@im.wechat", "Hello");
 await client.sendFile("user@im.wechat", "./photo.jpg", { text: "Check this" });
 ```
 
-`resolveAccount()` follows the same discovery logic as the CLI: env vars > local account files.
-
 ## Links
 
 - [npm](https://www.npmjs.com/package/@herai/wxclawbot-cli)
 - [GitHub](https://github.com/lroolle/wxclawbot-cli)
 - [ClawHub](https://clawhub.ai/lroolle/wxclawbot-send) -- `clawhub install wxclawbot-send`
-- [WeChat Integration Tutorial](https://mp.weixin.qq.com/s/nYDQ1obQEHe1WavGpNzasQ) -- start here for basic setup
+- [WeChat Integration Tutorial](https://mp.weixin.qq.com/s/nYDQ1obQEHe1WavGpNzasQ) -- start here
 
 ## License
 
-MIT -- take it and run.
+MIT
