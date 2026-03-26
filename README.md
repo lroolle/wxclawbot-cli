@@ -15,9 +15,12 @@
 
 ## English
 
-Proactive messaging CLI for WeChat ClawBot. Send messages to WeChat users from scripts, cron jobs, or AI agents.
+Proactive messaging CLI for WeChat ClawBot. Send **text** messages to WeChat users from scripts, cron jobs, or AI agents.
 
-Piggybacks on [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) credentials -- no separate login needed. Inspired by [weclaw](https://github.com/fastclaw-ai/weclaw) (Go).
+**Supported:** Text messages.
+**Not yet supported:** Images, video, files, voice (use [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) directly for media).
+
+Piggybacks on openclaw-weixin credentials -- no separate login needed. Inspired by [weclaw](https://github.com/fastclaw-ai/weclaw) (Go).
 
 ### Install
 
@@ -98,9 +101,12 @@ MIT
 
 ## 简体中文
 
-微信 ClawBot 主动消息发送 CLI 工具。支持从脚本、定时任务或 AI Agent 发送消息给微信用户。
+微信 ClawBot 主动消息发送 CLI 工具。支持从脚本、定时任务或 AI Agent 发送**文本**消息给微信用户。
 
-复用 [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin) 的登录凭证，无需额外登录。灵感来自 [weclaw](https://github.com/fastclaw-ai/weclaw)（Go 版本）。
+**支持：** 文本消息。
+**暂不支持：** 图片、视频、文件、语音（如需发送媒体文件请直接使用 [openclaw-weixin](https://www.npmjs.com/package/@tencent-weixin/openclaw-weixin)）。
+
+复用 openclaw-weixin 的登录凭证，无需额外登录。灵感来自 [weclaw](https://github.com/fastclaw-ai/weclaw)（Go 版本）。
 
 ### 安装
 

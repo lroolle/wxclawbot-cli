@@ -1,12 +1,14 @@
 ---
 name: wxclaw-send
 description: >
-  Send WeChat messages via wxclaw CLI. Use when: sending messages to WeChat
-  users, notifying WeChat contacts, delivering reports or alerts to WeChat,
-  pushing notifications via WeChat. Triggers: send wechat, wxclaw, wechat
-  message, notify wechat, weixin message, wx message, wxclaw send, push
-  wechat. DO NOT TRIGGER when: sending email, SMS, Slack, Teams, Telegram,
-  or other non-WeChat messages.
+
+  Send text messages to WeChat users via wxclaw CLI. Text only (no images,
+  video, or files). Use when: sending text messages to WeChat users, notifying
+  WeChat contacts, delivering text reports or alerts to WeChat, pushing text
+  notifications via WeChat. Triggers: send wechat, wxclaw, wechat message,
+  notify wechat, weixin message, wx message, wxclaw send, push wechat.
+  DO NOT TRIGGER when: sending images/video/files to WeChat, sending email,
+  SMS, Slack, Teams, Telegram, or other non-WeChat messages.
 license: MIT
 ---
 
@@ -14,6 +16,9 @@ license: MIT
 
 Send text messages to WeChat users via `wxclaw` CLI (`@herai/wxclaw-cli`).
 For AI agents, scripts, and cron jobs.
+
+**Supported:** Text messages only.
+**Not supported:** Images, video, files, voice. Use openclaw-weixin directly for media.
 
 ## Prerequisites
 
@@ -92,6 +97,7 @@ Rate limits are server-side, shared across all clients on same bot token.
 - Check `ok` field in JSON response -- exit 0 means the CLI ran, not that the message was delivered
 - Do not retry rate-limited requests (`ret=-2`) in a tight loop -- wait 5-10s minimum
 - Pipe large messages via stdin rather than `--text` to avoid shell quoting issues
+- Text only -- do not attempt to send images, video, or file attachments (not supported in v0.1)
 
 ## Environment Variables
 
